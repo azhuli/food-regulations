@@ -2131,9 +2131,9 @@ Object.assign(lawArticles, {
         html = html.replace(/<table /g, '<div class="table-scroll"><table ').replace(/<\/table>/g, '</table></div>');
       }
       const prefixHtml = prefix ? hlText(prefix, q).replace(/\n/g, '<br>') + '<br><br>' : '';
-      if (!q) return prefixHtml + html;
-      const safeQ = q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-      return prefixHtml + html.replace(new RegExp('(' + safeQ + ')(?![^<]*>)', 'gi'), '<mark>$1</mark>');
+      // 注意：HTML 表格部分不在字串層做 regex highlight（會破壞 DOM 結構）
+      // 改由呼叫端插入 DOM 後透過 highlightDomNode() 做 text-node 層級 highlight
+      return prefixHtml + html;
     }
     if (!text.includes('【')) {
       // 若包含 @@TABLE，整段交給 formatAnnexBody 處理
@@ -2335,6 +2335,35 @@ Object.assign(lawArticles, {
       card.querySelector('.article-head').addEventListener('click', () => {
         card.classList.toggle('open');
       });
+
+      // 若有搜尋關鍵字，對 reg-table-block 內的 text node 做 DOM-level highlight
+      // （避免用 regex 替換 HTML 字串破壞表格結構）
+      if (q) {
+        const rtb = card.querySelector('.reg-table-block');
+        if (rtb) {
+          const safeQ = q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+          const re = new RegExp('(' + safeQ + ')', 'gi');
+          const walker = document.createTreeWalker(rtb, NodeFilter.SHOW_TEXT);
+          const textNodes = [];
+          let node;
+          while ((node = walker.nextNode())) textNodes.push(node);
+          textNodes.forEach(tn => {
+            if (!re.test(tn.nodeValue)) return;
+            re.lastIndex = 0;
+            const frag = document.createDocumentFragment();
+            let last = 0, m;
+            while ((m = re.exec(tn.nodeValue)) !== null) {
+              if (m.index > last) frag.appendChild(document.createTextNode(tn.nodeValue.slice(last, m.index)));
+              const mark = document.createElement('mark');
+              mark.textContent = m[1];
+              frag.appendChild(mark);
+              last = re.lastIndex;
+            }
+            if (last < tn.nodeValue.length) frag.appendChild(document.createTextNode(tn.nodeValue.slice(last)));
+            tn.parentNode.replaceChild(frag, tn);
+          });
+        }
+      }
 
       // 若有搜尋關鍵字，過濾表格中不相關的列
       if (q) {
