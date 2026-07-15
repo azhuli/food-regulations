@@ -2371,7 +2371,7 @@ Object.assign(lawArticles, {
           const tbody = table.querySelector('tbody');
           if (!tbody) return;
           const rows = Array.from(tbody.querySelectorAll('tr'));
-          if (rows.length < 4) return; // 太小的表不過濾
+          if (rows.length < 1) return; // 空表不過濾
 
           const qLower = q.toLowerCase();
 
@@ -2384,24 +2384,74 @@ Object.assign(lawArticles, {
             return false;
           }
 
-          // 先標記每行是否「直接命中」
-          rows.forEach(tr => {
-            tr.dataset.hit = (!isSectionHeader(tr) && tr.textContent.toLowerCase().includes(qLower)) ? '1' : '0';
+          // 建立 rowspan 群組：第一欄有 rowspan 的列為群組起點，後續被涵蓋的列同群組
+          // 群組內任一列命中 → 整群組顯示（保持 rowspan 結構完整）
+          const rowGroups = [];
+          let i = 0;
+          while (i < rows.length) {
+            const tr = rows[i];
+            if (isSectionHeader(tr)) {
+              rowGroups.push({ isSectionHeader: true, rows: [tr] });
+              i++;
+              continue;
+            }
+            const firstTd = tr.querySelector('td');
+            const rs = firstTd ? parseInt(firstTd.getAttribute('rowspan') || '1') : 1;
+            if (rs > 1) {
+              const group = [];
+              for (let k = 0; k < rs && (i + k) < rows.length; k++) {
+                group.push(rows[i + k]);
+              }
+              rowGroups.push({ isSectionHeader: false, rows: group });
+              i += rs;
+            } else {
+              rowGroups.push({ isSectionHeader: false, rows: [tr] });
+              i++;
+            }
+          }
+
+          // 標記每個群組是否命中
+          rowGroups.forEach(group => {
+            if (group.isSectionHeader) return;
+            group.hit = group.rows.some(tr => tr.textContent.toLowerCase().includes(qLower));
           });
 
-          // Section header：往後找，若有任何子行命中則顯示
-          rows.forEach((tr, idx) => {
-            if (isSectionHeader(tr)) {
+          // Section header：若後續任一非 header 群組命中則顯示
+          rowGroups.forEach((group, idx) => {
+            if (group.isSectionHeader) {
               let anyChildHit = false;
-              for (let j = idx + 1; j < rows.length; j++) {
-                if (isSectionHeader(rows[j])) break;
-                if (rows[j].dataset.hit === '1') { anyChildHit = true; break; }
+              for (let j = idx + 1; j < rowGroups.length; j++) {
+                if (rowGroups[j].isSectionHeader) break;
+                if (rowGroups[j].hit) { anyChildHit = true; break; }
               }
-              tr.style.display = anyChildHit ? '' : 'none';
+              group.rows.forEach(tr => { tr.style.display = anyChildHit ? '' : 'none'; });
             } else {
-              tr.style.display = tr.dataset.hit === '1' ? '' : 'none';
+              group.rows.forEach(tr => { tr.style.display = group.hit ? '' : 'none'; });
             }
           });
+
+          // 若整張表所有資料列都被隱藏，連同 table-scroll 容器及前面的 h5 標題一起隱藏
+          const allHidden = rowGroups.filter(g => !g.isSectionHeader).every(g => !g.hit);
+          const tableScroll = table.closest('.table-scroll');
+          const container = tableScroll || table;
+          if (allHidden) {
+            container.style.display = 'none';
+            // 找緊鄰前面的 h5（annex-h2）
+            let prev = container.previousElementSibling;
+            while (prev) {
+              if (prev.tagName === 'H5') { prev.style.display = 'none'; break; }
+              if (prev.tagName === 'TABLE' || prev.classList.contains('table-scroll')) break;
+              prev = prev.previousElementSibling;
+            }
+          } else {
+            container.style.display = '';
+            let prev = container.previousElementSibling;
+            while (prev) {
+              if (prev.tagName === 'H5') { prev.style.display = ''; break; }
+              if (prev.tagName === 'TABLE' || prev.classList.contains('table-scroll')) break;
+              prev = prev.previousElementSibling;
+            }
+          }
         });
       }
 
