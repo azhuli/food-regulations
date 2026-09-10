@@ -683,7 +683,6 @@
     color: var(--tea-dark);
     font-size: 13.5px;
     margin: 10px 0 4px 0;
-    padding-left: 2px;
     border-left: 3px solid var(--tea);
     padding-left: 8px;
   }
@@ -1129,8 +1128,8 @@
       </div>
     </div>
     <div class="header-meta">
-      收錄分類 <strong id="catCount">8</strong> 項<br>
-      條文資料更新至 <strong>2026/09</strong>
+      收錄分類 <strong id="catCount"></strong> 項<br>
+      條文資料更新至 <strong id="dataDate"></strong>
     </div>
   </div>
 </header>
@@ -1226,7 +1225,7 @@
 </main>
 
 <footer>
-  食品法規快速查詢 ｜ 僅供參考，正式內容請以主管機關公告版本為準
+  食品法規快速查詢 ｜ 僅供參考，正式內容請以主管機關公告版本為準<br>資料來源：衛生福利部食品藥物管理署
 </footer>
 
 <script>
@@ -3337,6 +3336,23 @@ Object.assign(lawArticles, {"食品安全衛生管理法修正草案_行政院_2
   });
 
             document.getElementById('catCount').textContent = categories.length;
+            // 自動計算最新資料日期（從 lawArticles key 後綴取 YYYYMMDD）
+            (function() {
+              const dateRe = /_(\d{8})$/;
+              let latest = 0;
+              Object.keys(lawArticles).forEach(k => {
+                const m = k.match(dateRe);
+                if (m) {
+                  const d = parseInt(m[1]);
+                  if (d > latest) latest = d;
+                }
+              });
+              if (latest) {
+                const s = String(latest);
+                document.getElementById('dataDate').textContent =
+                  s.slice(0,4) + '/' + s.slice(4,6);
+              }
+            })();
             renderGrid(categories);
 </script>
 
