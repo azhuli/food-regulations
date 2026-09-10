@@ -1129,7 +1129,7 @@
     </div>
     <div class="header-meta">
       收錄分類 <strong id="catCount"></strong> 項<br>
-      條文資料更新至 <strong id="dataDate"></strong>
+      網頁更新 <strong id="dataDate"></strong>
     </div>
   </div>
 </header>
@@ -1229,6 +1229,8 @@
 </footer>
 
 <script>
+  const SITE_UPDATED = "2026/09"; // ← 每次更新網站時改這裡
+
   // ---- 分類資料（第一層）----
   // ordinal 採用傳統法規彙編慣用的中文大寫數字，呼應「六法全書」式的分類語彙
   const categories = [
@@ -3336,23 +3338,7 @@ Object.assign(lawArticles, {"食品安全衛生管理法修正草案_行政院_2
   });
 
             document.getElementById('catCount').textContent = categories.length;
-            // 自動計算最新資料日期（從 lawArticles key 後綴取 YYYYMMDD）
-            (function() {
-              const dateRe = /_(\d{8})$/;
-              let latest = 0;
-              Object.keys(lawArticles).forEach(k => {
-                const m = k.match(dateRe);
-                if (m) {
-                  const d = parseInt(m[1]);
-                  if (d > latest) latest = d;
-                }
-              });
-              if (latest) {
-                const s = String(latest);
-                document.getElementById('dataDate').textContent =
-                  s.slice(0,4) + '/' + s.slice(4,6);
-              }
-            })();
+            document.getElementById('dataDate').textContent = SITE_UPDATED;
             renderGrid(categories);
 </script>
 
