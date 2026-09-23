@@ -486,6 +486,25 @@
 
   .law-item:hover .chevron { transform: translateX(3px); color: var(--tea-dark); }
 
+  /* 外部連結項目：與一般法規明顯區隔 */
+  .law-item.is-external .law-icon { background: #F6E4DC; color: var(--seal); }
+  .law-ext-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11.5px; font-weight: 600;
+    color: var(--seal); background: #F6E4DC;
+    border: 1px solid #E3BFB2; border-radius: 999px;
+    padding: 2px 9px; white-space: nowrap; flex-shrink: 0;
+  }
+  .law-ext-badge svg { width: 11px; height: 11px; }
+  .law-item.is-external .chevron { color: var(--seal); }
+  .law-item.is-external:hover .chevron { transform: translate(2px,-2px); color: var(--seal); }
+  .ext-hint {
+    padding: 22px 18px; text-align: center; color: var(--gray); font-size: 13.5px; line-height: 1.7;
+  }
+  .ext-hint strong { color: var(--seal); }
+  .ext-hint .external-link-btn { margin-top: 12px; }
+  .ext-hint .external-link-btn svg { width: 16px; height: 16px; }
+
   .empty-note {
     padding: 30px 18px;
     text-align: center;
@@ -972,6 +991,12 @@
     .law-item:hover {
       background: #2D2518;
     }
+
+    .law-item.is-external .law-icon,
+    .law-ext-badge { background: #3A2622; color: #E8B3A3; border-color: #6B3F35; }
+    .law-item.is-external .chevron { color: #E8B3A3; }
+    .ext-hint { color: #CFC6B8; }
+    .ext-hint strong { color: #E8B3A3; }
 
     /* 第二層：法規名稱 */
     .law-name {
@@ -1599,25 +1624,47 @@
 
   const lawListEl = document.getElementById('lawList');
 
+  // 外部連結判定：有 externalLinks 且沒有第三層條文資料者
+  const EXT_ICON_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>';
+  function isExternalOnly(raw) {
+    const la = lawArticles[raw];
+    return !!(externalLinks[raw] && !(la && la.length));
+  }
+
   function renderLawList(cat, laws) {
     lawListEl.innerHTML = '';
     if (!laws || laws.length === 0) {
-      lawListEl.innerHTML = `<div class="empty-note">找不到符合的法規</div>`;
+      // 若本分類含外部查詢平台，提示使用者此處只搜尋「法規名稱」，品項內容須至官方網站查
+      const extRaws = (cat && cat.laws ? cat.laws : []).filter(r => isExternalOnly(r));
+      if (extRaws.length) {
+        const q = (document.getElementById('lawSearchInput').value || '').trim();
+        const safeQ = q.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+        const btns = extRaws.map(r => {
+          const ext = externalLinks[r];
+          return `<a class="external-link-btn" href="${ext.url}" target="_blank" rel="noopener">${EXT_ICON_SVG}${ext.label}</a>`;
+        }).join('<br>');
+        lawListEl.innerHTML = `<div class="ext-hint">找不到名稱含「${safeQ}」的法規。<br>此處只搜尋<strong>法規名稱</strong>；若要查詢原料、品項等內容，請至<strong>官方查詢平台</strong>搜尋：<br>${btns}</div>`;
+      } else {
+        lawListEl.innerHTML = `<div class="empty-note">找不到符合的法規</div>`;
+      }
       return;
     }
     laws.forEach(raw => {
       const { name, tag } = parseLawName(raw);
+      const isExt = isExternalOnly(raw);
       const item = document.createElement('div');
-      item.className = 'law-item';
+      item.className = isExt ? 'law-item is-external' : 'law-item';
+      if (isExt) item.title = '點擊前往官方外部查詢網站';
       item.setAttribute('role', 'button');
       item.setAttribute('tabindex', '0');
       item.innerHTML = `
         <div class="law-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l4 4v14a1 1 0 01-1 1H6a1 1 0 01-1-1V4a1 1 0 011-1z"></path><path d="M14 3v4h4"></path><line x1="8" y1="12" x2="16" y2="12"></line><line x1="8" y1="16" x2="14" y2="16"></line></svg>
+          ${isExt ? EXT_ICON_SVG : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l4 4v14a1 1 0 01-1 1H6a1 1 0 01-1-1V4a1 1 0 011-1z"></path><path d="M14 3v4h4"></path><line x1="8" y1="12" x2="16" y2="12"></line><line x1="8" y1="16" x2="14" y2="16"></line></svg>`}
         </div>
         <span class="law-name">${name}</span>
+        ${isExt ? `<span class="law-ext-badge">${EXT_ICON_SVG}外部官方網站</span>` : ''}
         ${tag ? `<span class="law-tag">${tag}</span>` : ''}
-        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+        ${isExt ? EXT_ICON_SVG.replace('<svg ', '<svg class="chevron" ') : `<svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>`}
       `;
       const open = () => openLaw(cat, raw);
       item.addEventListener('click', open);
