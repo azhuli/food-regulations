@@ -509,6 +509,17 @@
   .law-ext-badge svg { width: 11px; height: 11px; }
   .law-item.is-external .chevron { color: var(--seal); }
   .law-item.is-external:hover .chevron { transform: translate(2px,-2px); color: var(--seal); }
+  /* 問答集項目：與法條明顯區隔 */
+  .law-item.is-qa .law-icon { background: #DDEBF5; color: #2D6A9F; }
+  .law-qa-badge {
+    display: inline-flex; align-items: center;
+    font-size: 11.5px; font-weight: 600;
+    color: #2D6A9F; background: #DDEBF5;
+    border: 1px solid #B5D0E4; border-radius: 999px;
+    padding: 2px 9px; white-space: nowrap; flex-shrink: 0;
+  }
+  .law-item.is-qa:hover { background: #EEF5FA; }
+  .law-item.is-qa:hover .chevron { color: #2D6A9F; }
   .ext-hint {
     padding: 22px 18px; text-align: center; color: var(--gray); font-size: 13.5px; line-height: 1.7;
   }
@@ -577,7 +588,9 @@
     border: 1.5px solid #d8cfc3;
     color: #6b5f52;
     transition: background 0.15s, color 0.15s, border-color 0.15s;
-    white-space: nowrap;
+    white-space: normal;
+    max-width: 100%;
+    line-height: 1.5;
     user-select: none;
     font-weight: 500;
   }
@@ -651,7 +664,9 @@
     font-weight: 600;
     color: var(--tea-dark);
     letter-spacing: 1px;
-    white-space: nowrap;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    min-width: 0;
   }
 
   .article-card {
@@ -1316,7 +1331,7 @@
 </footer>
 
 <script>
-  const SITE_UPDATED = "2026/10"; // ← 每次更新網站時改這裡
+  const SITE_UPDATED = "2026/11"; // ← 每次更新網站時改這裡
 
   // ---- 分類資料（第一層）----
   // ordinal 採用傳統法規彙編慣用的中文大寫數字，呼應「六法全書」式的分類語彙
@@ -1349,11 +1364,9 @@
       desc: "包裝食品營養標示、過敏原標示等應遵行事項。",
       icon: `<path d="M20.59 13.41L11 3.83A2 2 0 009.59 3.17H4a1 1 0 00-1 1v5.59a2 2 0 00.59 1.42l9.58 9.58a2 2 0 002.83 0l4.59-4.59a2 2 0 000-2.83z"></path><circle cx="7.5" cy="7.5" r="1.2"></circle>`,
       laws: [
-        "114年版-食品標示問答集彙整手冊",
+        "食品標示諮詢服務平台",
         "小包裝食品免一部標示規定_20210901",
-        "包裝食品宣稱為素食標示問答集_20241105",
         "包裝食品營養宣稱應遵行事項_20260101",
-        "包裝食品營養宣稱應遵行事項問答集_20240219",
         "包裝食品營養標示應遵行事項_20240701",
         "包裝蜂蜜及其糖漿類產品標示規定_20230701",
         "包裝維生素礦物質類之錠狀膠囊狀食品營養標示應遵行事項_20191107",
@@ -1362,7 +1375,10 @@
         "食品過敏原標示規定_20190101",
         "食品器具容器包裝塑膠類材質名稱標示原則_20191210",
         "連鎖飲料便利商店及速食業之現場調製飲料標示規定_20230101",
-        "散裝食品標示規定_20210101"
+        "散裝食品標示規定_20210101",
+        "114年版-食品標示問答集彙整手冊",
+        "包裝食品宣稱為素食標示問答集_20241105",
+        "包裝食品營養宣稱應遵行事項問答集_20240219"
       ]
     },
     {
@@ -1459,7 +1475,7 @@
     },
     {
       ordinal: "拾貳",
-      title: "食品安全監測計劃",
+      title: "食品安全監測計畫",
       desc: "食品安全監測計畫之抽驗、監測與通報機制。",
       icon: `<circle cx="12" cy="12" r="8"></circle><path d="M12 12l4-4"></path><circle cx="12" cy="12" r="1.1" fill="currentColor" stroke="none"></circle>`,
       laws: [
@@ -1701,16 +1717,18 @@
       const { name, tag } = parseLawName(raw);
       const isExt = isExternalOnly(raw);
       const item = document.createElement('div');
-      item.className = isExt ? 'law-item is-external' : 'law-item';
+      const isQA = !isExt && /問答/.test(raw);
+      item.className = isExt ? 'law-item is-external' : (isQA ? 'law-item is-qa' : 'law-item');
       if (isExt) item.title = '點擊前往官方外部查詢網站';
       item.setAttribute('role', 'button');
       item.setAttribute('tabindex', '0');
       item.innerHTML = `
         <div class="law-icon">
-          ${isExt ? EXT_ICON_SVG : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l4 4v14a1 1 0 01-1 1H6a1 1 0 01-1-1V4a1 1 0 011-1z"></path><path d="M14 3v4h4"></path><line x1="8" y1="12" x2="16" y2="12"></line><line x1="8" y1="16" x2="14" y2="16"></line></svg>`}
+          ${isExt ? EXT_ICON_SVG : (isQA ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 01-8 8H6l-3 3V12a8 8 0 018-8h2a8 8 0 018 8z"></path><path d="M9.8 9.5a2.3 2.3 0 114 1.5c-.8.7-1.8 1-1.8 2.2"></path><circle cx="12" cy="16.2" r=".6" fill="currentColor"></circle></svg>` : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l4 4v14a1 1 0 01-1 1H6a1 1 0 01-1-1V4a1 1 0 011-1z"></path><path d="M14 3v4h4"></path><line x1="8" y1="12" x2="16" y2="12"></line><line x1="8" y1="16" x2="14" y2="16"></line></svg>`)}
         </div>
         <span class="law-name">${name}</span>
         ${isExt ? `<span class="law-ext-badge">${EXT_ICON_SVG}外部官方網站</span>` : ''}
+        ${isQA ? `<span class="law-qa-badge">問答集</span>` : ''}
         ${tag ? `<span class="law-tag">${tag}</span>` : ''}
         ${isExt ? EXT_ICON_SVG.replace('<svg ', '<svg class="chevron" ') : `<svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>`}
       `;
@@ -2740,6 +2758,11 @@ Object.assign(lawArticles, {"食品安全衛生管理法修正草案_行政院_2
       url: "https://consumer.fda.gov.tw/Food/Testing.aspx?nodeID=1037",
       label: "開啟食藥署公告檢驗方法查詢系統",
       desc: "衛生福利部食品藥物管理署「公告檢驗方法」查詢系統，收錄主管機關公告之食品各類檢驗方法，請至官方網站查閱最新公告內容。"
+    },
+    "食品標示諮詢服務平台": {
+      url: "https://foodlabel.fda.gov.tw/FdaFrontEndApp",
+      label: "開啟食品標示諮詢服務平台",
+      desc: "衛生福利部食品藥物管理署「食品標示諮詢服務平台」，提供食品標示相關法規、問答及諮詢服務，請至官方網站查閱最新內容。"
     }
   };
 
@@ -3237,7 +3260,7 @@ Object.assign(lawArticles, {"食品安全衛生管理法修正草案_行政院_2
   function openCategory(cat) {
     currentCat = cat;
     document.getElementById('listOrdinal').textContent = cat.ordinal;
-    document.getElementById('listTitle').textContent = cat.title;
+    document.getElementById('listTitle').textContent = cat.title.replace(/<br\s*\/?>/gi, '');
     document.getElementById('listCount').textContent = `共 ${cat.laws.length} 筆法規`;
     document.getElementById('lawSearchInput').value = '';
     renderLawList(cat, cat.laws);
@@ -3404,7 +3427,7 @@ Object.assign(lawArticles, {"食品安全衛生管理法修正草案_行政院_2
       matches.map(({ cat, raw }, i) => {
         const { name } = parseLawName(raw);
         return `<div class="direct-item" data-idx="${i}" onclick="goDirect(${i})">
-          <span class="direct-cat">${cat.ordinal} ${cat.title}</span>
+          <span class="direct-cat">${cat.ordinal} ${cat.title.replace(/<br\s*\/?>/gi, '')}</span>
           <span class="direct-name">${name}</span>
           <span class="direct-arrow">›</span>
         </div>`;
