@@ -3308,7 +3308,12 @@ Object.assign(lawArticles, {"食品安全衛生管理法修正草案_行政院_2
               group.selfHit = terms.every(t => own.includes(t));
               hdrStack.push({ level: group.level, norm: group.norm });
             } else {
-              const all = hdrStack.map(h => h.norm).join('') + group.norm + ctxNorm;
+              // 資料列若有編號（如 1.2），只繼承「層級比它高」的分類列；同層或更高層的不是它的上層
+              const ftd = group.rows[0].querySelector('td');
+              const dm = ftd ? ftd.textContent.normalize('NFKC').trim().match(/^(\d+(?:\.\d+)*)/) : null;
+              group.level = dm ? dm[1].split('.').length : null;
+              const anc = hdrStack.filter(h => group.level === null || h.level === null || h.level < group.level);
+              const all = anc.map(h => h.norm).join('') + group.norm + ctxNorm;
               group.hit = terms.every(t => all.includes(t));
             }
           });
@@ -3323,6 +3328,8 @@ Object.assign(lawArticles, {"食品安全衛生管理法修正草案_行政院_2
                   if (group.level === null || g.level === null || g.level <= group.level) break;
                   continue;
                 }
+                // 編號層級與分類列同層或更高的資料列，不屬於這個分類列底下
+                if (group.level !== null && g.level !== null && g.level <= group.level) break;
                 if (g.hit) show = true;
               }
               group.rows.forEach(tr => { tr.style.display = show ? '' : 'none'; });
